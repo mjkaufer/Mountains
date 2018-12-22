@@ -41,6 +41,9 @@ function init() {
         vertexShader: document.getElementById( 'vertexShader' ).textContent,
         fragmentShader: document.getElementById( 'fragmentShader' ).textContent
     });
+
+    // material = THREE.MeshBasicMaterial()
+
     material.side = THREE.DoubleSide;
 
     mesh = new THREE.Mesh( geometry, material );
@@ -50,7 +53,7 @@ function init() {
     mesh.position.y -= 2;
     scene.add( mesh );
 
-    renderer = new THREE.WebGLRenderer( { antialias: true } );
+    renderer = new THREE.WebGLRenderer( { antialias: false } );
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( window.innerWidth, window.innerHeight );
     document.body.appendChild( renderer.domElement );
@@ -75,12 +78,9 @@ function getNeighbors(i, j, dim) {
     return neighbors;
 }
 
-function wait(ms) {
-    var start = Date.now(),
-        now = start;
-    while (now - start < ms) {
-      now = Date.now();
-    }
+function noise(scalar) {
+    var n = scalar || 1
+    return Math.sin((Math.random() - 0.5) * Math.PI) / n
 }
 
 function generateMountainGeometry(iterCount) {
@@ -98,17 +98,10 @@ function generateMountainGeometry(iterCount) {
             grid[i][j] = {
                 v: new THREE.Vector3(x, y, Math.random() * 1.4),
                 i: undefined,
-                // modified: false,
             };
 
             grid[i][j].n = grid[i][j].v.clone();
 
-            // if ((i == 0 || i == dim - 1) && (j == 0 || j == dim - 1)) {
-            //  grid[i][j].z = Math.random() * magnitude - magnitude / 2;
-            //  grid[i][j].modified = true;
-            // } else {
-            //  grid[i][j].z = Math.random();
-            // }
         }
     }
 
@@ -116,28 +109,19 @@ function generateMountainGeometry(iterCount) {
 
     var attractors = [
         {
-            // pos: new THREE.Vector3(width / 2, width / 2 - width / 6, magnitude),
-            pos: new THREE.Vector3(0, -width / 8, magnitude * 0.7),
+            pos: new THREE.Vector3(0, -width / 8 + noise(1.5), magnitude * 0.7 + noise(8)),
             width: width / 6,
         },
         {
-            // pos: new THREE.Vector3(width / 2, width / 2 - width / 8, magnitude * 3 / 4),
-            pos: new THREE.Vector3(width / 12, width / 8, magnitude * 0.75),
+            pos: new THREE.Vector3(width / 12 + noise(1.5), width / 8 + noise(1.5), magnitude * 0.75 + noise(8)),
             width: width / 4,
         }
     ];
 
-    // var maxDistance = 0;
-
-    // attractors.forEach(function(attractor) {
-    //     maxDistance += Math.sqrt(Math.pow(attractor.z, 2) + Math.pow(halfWidth, 2));
-    // })
 
     for (var iteration = 0; iteration < iterCount; iteration++) {
 
         var alpha = 1 - Math.pow(iteration / iterCount, 0.25);
-        // var alpha = 0;
-        // var alpha = 0
 
         for (var i = 0; i < dim; i++) {
             for (var j = 0; j < dim; j++) {
@@ -236,21 +220,21 @@ function generateMountainGeometry(iterCount) {
     return mountainGeometry;
 }
 
-function onWindowResize() {
-
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-
-    renderer.setSize( window.innerWidth, window.innerHeight );
-
+function animate() {
+    renderer.render( scene, camera );
 }
 
-function animate() {
-
-    // requestAnimationFrame( animate );
-
-    // scene.rotation.z += 0.01;
-
-    renderer.render( scene, camera );
-
+var meshInitZ = mesh.rotation.z
+var meshInitX = mesh.rotation.x
+window.onload = function(e) {
+    console.log(e)
+}
+window.onmousemove = function(e) {
+    var rangeX = e.clientX / document.body.clientWidth - 0.5
+    var rangeY = e.clientY / document.body.clientHeight - 0.5
+    var thetaZ = rangeX * Math.PI / 2 + meshInitZ
+    var thetaX = rangeY * Math.PI / 3 + meshInitX
+    mesh.rotation.z = thetaZ
+    mesh.rotation.x = thetaX
+    animate()
 }
